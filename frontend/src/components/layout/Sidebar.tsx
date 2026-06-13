@@ -108,8 +108,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       <aside
         className={`
           fixed top-0 left-0 h-full w-64 z-30 transform transition-transform duration-300
-          bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700
-          flex flex-col
+          bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl border-r border-gray-200/50 dark:border-gray-700/50
+          flex flex-col shadow-2xl lg:shadow-none
           ${isOpen ? 'translate-x-0' : '-translate-x-full'}
           lg:translate-x-0 lg:static lg:z-auto
         `}
@@ -117,8 +117,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         {/* Logo / Brand */}
         <div className={`bg-gradient-to-r ${gradient} p-5`}>
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-white/20 rounded-lg flex items-center justify-center">
-              <Brain size={20} className="text-white" />
+            <div className="w-10 h-10 flex items-center justify-center transform hover:rotate-3 transition-all duration-300">
+              <img src="/logo.svg" alt="EPN Logo" className="w-full h-full object-contain drop-shadow-md" />
             </div>
             <div>
               <h1 className="text-white font-bold text-sm leading-tight">EPN</h1>

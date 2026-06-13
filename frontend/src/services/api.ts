@@ -168,4 +168,13 @@ export const profileApi = {
     api.put('/users/me/preferences', { preferences }),
 };
 
+// ─── Cognitive API (Adaptive Architecture) ───────────────────────────────────
+export const cognitiveApi = {
+  getMood: (studentId: string) => api.get(`/cognitive/mood`, { params: { student_id: studentId } }),
+  logMood: (data: any) => api.post(`/cognitive/mood`, data),
+  getMicroTasks: (studentId: string) => api.get(`/cognitive/micro-tasks`, { params: { student_id: studentId } }),
+  completeMicroTask: (taskId: string) => api.post(`/cognitive/micro-tasks/complete/${taskId}`),
+  createMicroTask: (data: any) => api.post(`/cognitive/micro-tasks`, data),
+};
+
 export default api;

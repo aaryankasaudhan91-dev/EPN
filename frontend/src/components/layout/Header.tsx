@@ -47,7 +47,7 @@ const Header: React.FC<HeaderProps> = ({ title, onMenuClick }) => {
   };
 
   return (
-    <header className="h-16 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between px-4 lg:px-6 sticky top-0 z-10">
+    <header className="h-16 bg-white/80 dark:bg-gray-900/80 backdrop-blur-lg border-b border-gray-200/50 dark:border-gray-700/50 flex items-center justify-between px-4 lg:px-6 sticky top-0 z-10 transition-colors duration-300">
       {/* Left: Menu + Title */}
       <div className="flex items-center gap-4">
         <button
@@ -86,8 +86,8 @@ const Header: React.FC<HeaderProps> = ({ title, onMenuClick }) => {
 
           {/* Notification dropdown */}
           {showNotifications && (
-            <div className="absolute right-0 top-12 w-80 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 z-50 animate-fade-in">
-              <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+            <div className="absolute right-0 top-12 w-80 bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-xl shadow-2xl border border-gray-200/50 dark:border-gray-700/50 z-50 animate-fade-in overflow-hidden">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200/50 dark:border-gray-700/50 bg-white/50 dark:bg-gray-800/50">
                 <h3 className="font-semibold text-gray-900 dark:text-white text-sm">Notifications</h3>
                 <button onClick={() => setShowNotifications(false)}>
                   <X size={16} className="text-gray-400" />
@@ -133,9 +133,9 @@ const Header: React.FC<HeaderProps> = ({ title, onMenuClick }) => {
           </button>
 
           {showUserMenu && (
-            <div className="absolute right-0 top-10 w-52 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 z-50 animate-fade-in overflow-hidden">
+            <div className="absolute right-0 top-10 w-52 bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-xl shadow-2xl border border-gray-200/50 dark:border-gray-700/50 z-50 animate-fade-in overflow-hidden">
               {/* User info */}
-              <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
+              <div className="px-4 py-3 border-b border-gray-100/50 dark:border-gray-700/50 bg-white/50 dark:bg-gray-800/50">
                 <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{user?.name}</p>
                 <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user?.email}</p>
               </div>

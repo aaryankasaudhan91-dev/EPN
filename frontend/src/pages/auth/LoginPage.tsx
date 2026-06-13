@@ -48,8 +48,8 @@ const LoginPage: React.FC = () => {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl shadow-lg mb-4">
-            <Brain size={32} className="text-white" />
+          <div className="inline-flex items-center justify-center w-24 h-24 mb-4 transform hover:scale-105 transition-all duration-500 ease-out">
+            <img src="/logo.svg" alt="EPN Logo" className="w-full h-full object-contain drop-shadow-xl" />
           </div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Educational Productivity Network</h1>
           <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm">AI-powered adaptive learning platform</p>

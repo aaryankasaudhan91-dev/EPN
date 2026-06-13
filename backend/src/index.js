@@ -24,6 +24,7 @@ const ledgerRoutes = require('./routes/ledger');
 const analyticsRoutes = require('./routes/analytics');
 const agentRoutes = require('./routes/agents');
 const chatRoutes = require('./routes/chat');
+const cognitiveRoutes = require('./routes/cognitive');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -71,6 +72,7 @@ app.use('/api/ledger', ledgerRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/agents', agentRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/cognitive', cognitiveRoutes);
 
 // ─── 404 Handler ───────────────────────────────────────────────────────────────
 app.use((req, res) => {

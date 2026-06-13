@@ -16,6 +16,7 @@ import StatCard from '../../components/ui/StatCard';
 import MasteryBar from '../../components/ui/MasteryBar';
 import ApprovalCard from '../../components/ui/ApprovalCard';
 import PerformanceChart from '../../components/charts/PerformanceChart';
+import ScrollSection from '../../components/ui/ScrollSection';
 import {
   analyticsApi, approvalsApi, studentsApi,
   learningPlansApi, contentApi,
@@ -89,155 +90,167 @@ const TeacherHome: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          title="Total Students"
-          value={overview.total_students as number || 0}
-          icon={<Users size={20} />}
-          color="purple"
-        />
-        <StatCard
-          title="Class Avg Mastery"
-          value={`${Math.round(parseFloat(String(overview.avg_mastery || 0)))}%`}
-          icon={<TrendingUp size={20} />}
-          color="blue"
-        />
-        <StatCard
-          title="At-Risk Students"
-          value={overview.high_risk_count as number || 0}
-          icon={<AlertTriangle size={20} />}
-          color="red"
-          subtitle="Risk score ≥ 70"
-        />
-        <StatCard
-          title="Pending Approvals"
-          value={approvals?.totalPending || 0}
-          icon={<CheckSquare size={20} />}
-          color="orange"
-        />
-      </div>
+      <ScrollSection delay={0.1} direction="up">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <StatCard
+            title="Total Students"
+            value={overview.total_students as number || 0}
+            icon={<Users size={20} />}
+            color="purple"
+          />
+          <StatCard
+            title="Class Avg Mastery"
+            value={`${Math.round(parseFloat(String(overview.avg_mastery || 0)))}%`}
+            icon={<TrendingUp size={20} />}
+            color="blue"
+          />
+          <StatCard
+            title="At-Risk Students"
+            value={overview.high_risk_count as number || 0}
+            icon={<AlertTriangle size={20} />}
+            color="red"
+            subtitle="Risk score ≥ 70"
+          />
+          <StatCard
+            title="Pending Approvals"
+            value={approvals?.totalPending || 0}
+            icon={<CheckSquare size={20} />}
+            color="orange"
+          />
+        </div>
+      </ScrollSection>
 
       {/* Main content grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Class performance chart */}
-        <div className="card lg:col-span-2">
-          <h3 className="font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-            <BarChart2 size={18} className="text-purple-600" />
-            Class Performance (Last 30 Days)
-          </h3>
-          {chartData.length > 0 ? (
-            <PerformanceChart data={chartData} height={250} />
-          ) : (
-            <div className="h-48 flex items-center justify-center text-gray-400 text-sm">
-              No assessment data in the last 30 days
-            </div>
-          )}
-        </div>
-
-        {/* At-risk students */}
-        <div className="card">
-          <h3 className="font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-            <AlertTriangle size={18} className="text-red-500" />
-            Knowledge Gap Alerts
-          </h3>
-          <div className="space-y-3">
-            {atRisk.slice(0, 6).map((s: unknown) => {
-              const student = s as { id: string; name: string; grade: string; risk_score: number; overall_mastery: number };
-              return (
-                <div key={student.id} className="flex items-center justify-between p-2 bg-red-50 dark:bg-red-900/10 rounded-lg border border-red-100 dark:border-red-900/30">
-                  <div>
-                    <p className="text-sm font-medium text-gray-900 dark:text-white">{student.name}</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Grade {student.grade} · Mastery: {Math.round(student.overall_mastery)}%</p>
-                  </div>
-                  <div className={`text-xs font-bold px-2 py-1 rounded-full ${student.risk_score >= 70 ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'}`}>
-                    Risk: {Math.round(student.risk_score)}
-                  </div>
-                </div>
-              );
-            })}
-            {atRisk.length === 0 && (
-              <p className="text-gray-400 text-sm text-center py-4">No at-risk students 🎉</p>
+        <ScrollSection delay={0.2} direction="left" className="lg:col-span-2">
+          <div className="card hover:shadow-lg transition-shadow duration-300">
+            <h3 className="font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+              <BarChart2 size={18} className="text-purple-600" />
+              Class Performance (Last 30 Days)
+            </h3>
+            {chartData.length > 0 ? (
+              <PerformanceChart data={chartData} height={250} />
+            ) : (
+              <div className="h-48 flex items-center justify-center text-gray-400 text-sm">
+                No assessment data in the last 30 days
+              </div>
             )}
           </div>
-        </div>
+        </ScrollSection>
+
+        {/* At-risk students */}
+        <ScrollSection delay={0.3} direction="right">
+          <div className="card hover:shadow-lg transition-shadow duration-300">
+            <h3 className="font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+              <AlertTriangle size={18} className="text-red-500" />
+              Knowledge Gap Alerts
+            </h3>
+            <div className="space-y-3">
+              {atRisk.slice(0, 6).map((s: unknown) => {
+                const student = s as { id: string; name: string; grade: string; risk_score: number; overall_mastery: number };
+                return (
+                  <div key={student.id} className="flex items-center justify-between p-2 bg-red-50 dark:bg-red-900/10 rounded-lg border border-red-100 dark:border-red-900/30 hover:bg-red-100 transition-colors">
+                    <div>
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">{student.name}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Grade {student.grade} · Mastery: {Math.round(student.overall_mastery)}%</p>
+                    </div>
+                    <div className={`text-xs font-bold px-2 py-1 rounded-full ${student.risk_score >= 70 ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'}`}>
+                      Risk: {Math.round(student.risk_score)}
+                    </div>
+                  </div>
+                );
+              })}
+              {atRisk.length === 0 && (
+                <p className="text-gray-400 text-sm text-center py-4">No at-risk students 🎉</p>
+              )}
+            </div>
+          </div>
+        </ScrollSection>
       </div>
 
       {/* Subject performance */}
-      <div className="card">
-        <h3 className="font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-          <TrendingDown size={18} className="text-blue-600" />
-          Subject Performance (Class Average)
-        </h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {subjectPerf.map((s: unknown) => {
-            const sub = s as { subject: string; avg_score: number; assessment_count: number };
-            return (
-              <div key={sub.subject}>
-                <MasteryBar label={sub.subject} value={parseFloat(String(sub.avg_score))} />
-                <p className="text-xs text-gray-400 mt-0.5">{sub.assessment_count} assessments</p>
-              </div>
-            );
-          })}
-          {subjectPerf.length === 0 && (
-            <p className="text-gray-400 text-sm col-span-2 text-center py-4">No subject data available</p>
-          )}
+      <ScrollSection delay={0.4} direction="up">
+        <div className="card hover:shadow-lg transition-shadow duration-300">
+          <h3 className="font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+            <TrendingDown size={18} className="text-blue-600" />
+            Subject Performance (Class Average)
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {subjectPerf.map((s: unknown) => {
+              const sub = s as { subject: string; avg_score: number; assessment_count: number };
+              return (
+                <div key={sub.subject}>
+                  <MasteryBar label={sub.subject} value={parseFloat(String(sub.avg_score))} />
+                  <p className="text-xs text-gray-400 mt-0.5">{sub.assessment_count} assessments</p>
+                </div>
+              );
+            })}
+            {subjectPerf.length === 0 && (
+              <p className="text-gray-400 text-sm col-span-2 text-center py-4">No subject data available</p>
+            )}
+          </div>
         </div>
-      </div>
+      </ScrollSection>
 
       {/* Pending approvals */}
-      <div className="card">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-            <CheckSquare size={18} className="text-orange-500" />
-            Pending Approvals ({approvals?.totalPending || 0})
-          </h3>
-          <button onClick={loadData} className="btn-secondary text-xs py-1.5 flex items-center gap-1">
-            <RefreshCw size={12} /> Refresh
-          </button>
+      <ScrollSection delay={0.5} direction="up">
+        <div className="card border-orange-200 dark:border-orange-900/50 hover:shadow-lg transition-shadow duration-300">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+              <CheckSquare size={18} className="text-orange-500 animate-pulse" />
+              Pending Approvals ({approvals?.totalPending || 0})
+            </h3>
+            <button onClick={loadData} className="btn-secondary text-xs py-1.5 flex items-center gap-1 hover:bg-orange-50 dark:hover:bg-orange-900/20">
+              <RefreshCw size={12} /> Refresh
+            </button>
+          </div>
+
+          {approvals?.totalPending === 0 ? (
+            <div className="text-center py-8">
+              <CheckCircle size={40} className="text-green-500 mx-auto mb-2" />
+              <p className="text-gray-500 dark:text-gray-400 text-sm">All caught up! No pending approvals.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {/* Learning plan approvals */}
+              {approvals?.learningPlans.slice(0, 4).map(plan => (
+                <div key={plan.id} className="transition-all hover:scale-[1.02]">
+                  <ApprovalCard
+                    id={plan.id}
+                    title={plan.title}
+                    subtitle={`${(plan.tasks || []).length} learning tasks`}
+                    type="plan"
+                    studentName={plan.studentName || 'Unknown'}
+                    grade={plan.grade}
+                    createdAt={plan.createdAt}
+                    details={{ tasks: plan.tasks?.length, description: plan.description }}
+                    onApprove={handleApprovePlan}
+                    onReject={handleRejectPlan}
+                  />
+                </div>
+              ))}
+
+              {/* Content approvals */}
+              {approvals?.generatedContent.slice(0, 4).map(content => (
+                <div key={content.id} className="transition-all hover:scale-[1.02]">
+                  <ApprovalCard
+                    id={content.id}
+                    title={content.title || `${content.topic} ${content.contentType}`}
+                    subtitle={`${content.subject} · ${content.contentType?.replace('_', ' ')}`}
+                    type="content"
+                    studentName={content.studentName || 'Unknown'}
+                    grade={content.grade}
+                    createdAt={content.createdAt}
+                    onApprove={handleApproveContent}
+                    onReject={handleRejectContent}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
         </div>
-
-        {approvals?.totalPending === 0 ? (
-          <div className="text-center py-8">
-            <CheckCircle size={40} className="text-green-500 mx-auto mb-2" />
-            <p className="text-gray-500 dark:text-gray-400 text-sm">All caught up! No pending approvals.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {/* Learning plan approvals */}
-            {approvals?.learningPlans.slice(0, 4).map(plan => (
-              <ApprovalCard
-                key={plan.id}
-                id={plan.id}
-                title={plan.title}
-                subtitle={`${(plan.tasks || []).length} learning tasks`}
-                type="plan"
-                studentName={plan.studentName || 'Unknown'}
-                grade={plan.grade}
-                createdAt={plan.createdAt}
-                details={{ tasks: plan.tasks?.length, description: plan.description }}
-                onApprove={handleApprovePlan}
-                onReject={handleRejectPlan}
-              />
-            ))}
-
-            {/* Content approvals */}
-            {approvals?.generatedContent.slice(0, 4).map(content => (
-              <ApprovalCard
-                key={content.id}
-                id={content.id}
-                title={content.title || `${content.topic} ${content.contentType}`}
-                subtitle={`${content.subject} · ${content.contentType?.replace('_', ' ')}`}
-                type="content"
-                studentName={content.studentName || 'Unknown'}
-                grade={content.grade}
-                createdAt={content.createdAt}
-                onApprove={handleApproveContent}
-                onReject={handleRejectContent}
-              />
-            ))}
-          </div>
-        )}
-      </div>
+      </ScrollSection>
     </div>
   );
 };
