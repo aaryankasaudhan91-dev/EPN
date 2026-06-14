@@ -122,7 +122,7 @@ const agents = [
 const team = [
   { name: 'Aaryan Kasaudhan', role: 'Founder & CEO', initials: 'AK', gradient: 'from-blue-500 to-purple-600', bio: 'EdTech researcher in adaptive learning systems.' },
   { name: 'Rudra Khargaokar', role: 'CTO', initials: 'RK', gradient: 'from-purple-500 to-pink-600', bio: 'AI/ML engineer specialising in educational NLP and knowledge graphs.' },
-  { name: 'Jitendra Chaudhary', role: 'Head of Pedagogy', initials: 'JC', gradient: 'from-green-500 to-teal-600', bio: 'Former teacher and curriculum designer with a passion for equity in education.' },
+  { name: 'Jitendra Choudhary', role: 'Head of Pedagogy', initials: 'JC', gradient: 'from-green-500 to-teal-600', bio: 'Curriculum designer with passion for equity in education and backend engineer .' },
   { name: 'Akshay Paswan', role: 'Lead Engineer', initials: 'AP', gradient: 'from-orange-500 to-red-600', bio: 'Full-stack engineer building the EPN platform from the ground up.' },
   { name: 'Rupesh Gore', role: 'Data Scientist', initials: 'RG', gradient: 'from-teal-500 to-blue-600', bio: 'Specialises in learning analytics and predictive modelling for at-risk students.' },
 ];
