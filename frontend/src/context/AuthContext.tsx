@@ -85,9 +85,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // 1. Firebase Auth handles the actual login
       await signInWithEmailAndPassword(firebaseAuth, email, password);
       // The onAuthStateChanged listener will handle syncing with the backend and updating state
-    } catch (err) {
-      dispatch({ type: 'SET_LOADING', payload: false });
-      throw err;
+    } catch (err: any) {
+      // Auto-migrate legacy Postgres accounts to Firebase
+      if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential' || err.code === 'auth/invalid-login-credentials') {
+        try {
+          // Attempt legacy authentication via backend
+          await authApi.login(email, password);
+          // If legacy login succeeds, create the Firebase account to migrate them
+          await createUserWithEmailAndPassword(firebaseAuth, email, password);
+        } catch (legacyErr) {
+          // If legacy login fails too, throw standard invalid credential error
+          dispatch({ type: 'SET_LOADING', payload: false });
+          throw new Error('Invalid email or password');
+        }
+      } else {
+        dispatch({ type: 'SET_LOADING', payload: false });
+        throw err;
+      }
     }
   }, []);
 

@@ -37,6 +37,27 @@ router.post('/register', [
       return res.status(409).json({ error: 'Email already registered' });
     }
 
+    let studentIdToLink = null;
+    
+    // If parent, verify child email exists BEFORE creating the user
+    if (role === 'parent') {
+      const { childEmail } = req.body;
+      if (!childEmail) {
+        return res.status(400).json({ error: 'Child email is required for parent registration.' });
+      }
+      
+      const { rows: childRows } = await query(
+        "SELECT s.id as student_id FROM users u JOIN students s ON u.id = s.user_id WHERE u.email = $1 AND u.role = 'student'",
+        [childEmail]
+      );
+      
+      if (childRows.length === 0) {
+        return res.status(400).json({ error: 'Child account not found. Please ensure the student has registered first.' });
+      }
+      
+      studentIdToLink = childRows[0].student_id;
+    }
+
     // If student, verify teacher exists BEFORE creating the user
     if (role === 'student') {
       if (!teacherName) {
@@ -108,6 +129,14 @@ router.post('/register', [
           );
         }
       }
+    }
+
+    // Link to student if role is parent
+    if (role === 'parent' && studentIdToLink) {
+      await query(
+        'INSERT INTO parent_student_links (parent_id, student_id) VALUES ($1, $2)',
+        [user.id, studentIdToLink]
+      );
     }
 
     const token = generateToken(user.id, user.role);

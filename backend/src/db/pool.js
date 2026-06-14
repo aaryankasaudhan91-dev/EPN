@@ -7,11 +7,7 @@ const { Pool } = require('pg');
 
 // Supabase Postgres connection
 const pool = new Pool({
-  host: process.env.DB_HOST,
-  port: parseInt(process.env.DB_PORT || '5432'),
-  database: process.env.DB_NAME,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
+  connectionString: process.env.SUPABASE_URL || process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false }, // Required for Supabase
   max: 20,                  // max pool connections
   idleTimeoutMillis: 30000, // close idle connections after 30s

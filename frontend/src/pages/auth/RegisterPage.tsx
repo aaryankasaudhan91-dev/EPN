@@ -11,7 +11,7 @@ const RegisterPage: React.FC = () => {
   const { register } = useAuth();
   const [formData, setFormData] = useState({
     name: '', email: '', password: '', confirmPassword: '',
-    role: 'student', grade: '9', parentEmail: '', teacherName: '', useAiTeacher: false,
+    role: 'student', grade: '9', parentEmail: '', teacherName: '', useAiTeacher: false, childEmail: '',
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -49,6 +49,7 @@ const RegisterPage: React.FC = () => {
         grade: formData.grade,
         parentEmail: formData.parentEmail || undefined,
         teacherName: formData.useAiTeacher ? 'Mira' : (formData.teacherName || undefined),
+        childEmail: formData.role === 'parent' ? formData.childEmail : undefined,
       });
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { error?: string; errors?: Array<{ msg: string }> } } };
@@ -138,6 +139,26 @@ const RegisterPage: React.FC = () => {
                   )}
                 </div>
               </>
+            )}
+
+            {formData.role === 'parent' && (
+              <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-xl border border-purple-100 dark:border-purple-800">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Child's Registered Email <span className="text-red-500">*</span>
+                </label>
+                <input 
+                  name="childEmail" 
+                  type="email" 
+                  value={formData.childEmail} 
+                  onChange={handleChange} 
+                  className="input" 
+                  placeholder="student@epn.edu" 
+                  required={formData.role === 'parent'} 
+                />
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                  Your child must have an active EPN account before you can register as a parent to track their progress.
+                </p>
+              </div>
             )}
 
             <div>
