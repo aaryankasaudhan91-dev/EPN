@@ -176,7 +176,7 @@ router.post('/login', [
     );
 
     if (!rows.length) {
-      return res.status(401).json({ error: 'Invalid credentials' });
+      return res.status(401).json({ error: 'Account does not exist' });
     }
 
     const user = rows[0];

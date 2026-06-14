@@ -93,10 +93,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           await authApi.login(email, password);
           // If legacy login succeeds, create the Firebase account to migrate them
           await createUserWithEmailAndPassword(firebaseAuth, email, password);
-        } catch (legacyErr) {
-          // If legacy login fails too, throw standard invalid credential error
+        } catch (legacyErr: any) {
+          // If legacy login fails too, throw the backend error or standard invalid credential error
           dispatch({ type: 'SET_LOADING', payload: false });
-          throw new Error('Invalid email or password');
+          const errorMessage = legacyErr.response?.data?.error || 'Invalid email or password';
+          throw new Error(errorMessage);
         }
       } else {
         dispatch({ type: 'SET_LOADING', payload: false });

@@ -53,8 +53,16 @@ const RegisterPage: React.FC = () => {
       });
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { error?: string; errors?: Array<{ msg: string }> } } };
+      const fbErr = err as { message?: string };
       const apiErrors = axiosErr.response?.data?.errors;
-      setError(apiErrors ? apiErrors[0].msg : axiosErr.response?.data?.error || 'Registration failed');
+      
+      const errorMessage = apiErrors 
+        ? apiErrors[0].msg 
+        : axiosErr.response?.data?.error 
+          || fbErr.message 
+          || 'Registration failed';
+          
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
