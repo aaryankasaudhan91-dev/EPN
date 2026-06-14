@@ -8,6 +8,16 @@ const { query } = require('../db/pool');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'epn-dev-secret-change-in-production';
 
+const admin = require('firebase-admin');
+const { getAuth } = require('firebase-admin/auth');
+
+// Initialize Firebase Admin if not already initialized
+if (!admin.getApps().length) {
+  admin.initializeApp({
+    projectId: process.env.FIREBASE_PROJECT_ID || 'epns-dfb87'
+  });
+}
+
 /**
  * Verify JWT token and attach user to req.user
  */
@@ -19,28 +29,25 @@ const authenticate = async (req, res, next) => {
     }
 
     const token = authHeader.split(' ')[1];
-    const decoded = jwt.verify(token, JWT_SECRET);
+    
+    // Verify Firebase token
+    const decoded = await getAuth().verifyIdToken(token);
 
-    // Fetch fresh user data from DB
+    // Fetch fresh user data from DB using email from Firebase token
     const { rows } = await query(
-      'SELECT id, name, email, role, is_active FROM users WHERE id = $1',
-      [decoded.userId]
+      'SELECT id, name, email, role, is_active FROM users WHERE email = $1',
+      [decoded.email]
     );
 
     if (!rows.length || !rows[0].is_active) {
-      return res.status(401).json({ error: 'User not found or inactive' });
+      return res.status(401).json({ error: 'User not found or inactive in database' });
     }
 
     req.user = rows[0];
     next();
   } catch (err) {
-    if (err.name === 'TokenExpiredError') {
-      return res.status(401).json({ error: 'Token expired' });
-    }
-    if (err.name === 'JsonWebTokenError') {
-      return res.status(401).json({ error: 'Invalid token' });
-    }
-    next(err);
+    console.error('Auth Error:', err);
+    return res.status(401).json({ error: 'Invalid token' });
   }
 };
 

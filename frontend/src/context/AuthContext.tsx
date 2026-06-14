@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useReducer, useEffect, useCallback } from 'react';
 import { User, AuthState } from '../types';
 import { authApi } from '../services/api';
+import { auth as firebaseAuth } from '../lib/firebase';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth';
 
 interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<void>;
@@ -50,31 +52,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [state, dispatch] = useReducer(authReducer, initialState);
 
   useEffect(() => {
-    const storedToken = localStorage.getItem('epn_token');
-    const storedUserStr = localStorage.getItem('epn_user');
-
-    // Restore stored session (either backend JWT or demo token)
-    if (storedToken && storedUserStr) {
-      try {
-        const user = JSON.parse(storedUserStr);
-        dispatch({ type: 'LOGIN_SUCCESS', payload: { user, token: storedToken } });
-      } catch (e) {
-        console.error('Failed to restore local session:', e);
+    // Listen to Firebase auth state changes
+    const unsubscribe = onAuthStateChanged(firebaseAuth, async (firebaseUser) => {
+      if (firebaseUser) {
+        try {
+          const token = await firebaseUser.getIdToken();
+          localStorage.setItem('epn_token', token);
+          
+          // Fetch real user data from backend using the Firebase token
+          const response = await authApi.me();
+          const user = response.data;
+          
+          localStorage.setItem('epn_user', JSON.stringify(user));
+          dispatch({ type: 'LOGIN_SUCCESS', payload: { user, token } });
+        } catch (error) {
+          console.error("Auth sync error:", error);
+          dispatch({ type: 'LOGOUT' });
+        }
+      } else {
+        localStorage.removeItem('epn_token');
+        localStorage.removeItem('epn_user');
         dispatch({ type: 'SET_LOADING', payload: false });
       }
-    } else {
-      dispatch({ type: 'SET_LOADING', payload: false });
-    }
+    });
+
+    return () => unsubscribe();
   }, []);
 
   const login = useCallback(async (email: string, password: string) => {
     dispatch({ type: 'SET_LOADING', payload: true });
     try {
-      const response = await authApi.login(email, password);
-      const { token, user } = response.data;
-      localStorage.setItem('epn_token', token);
-      localStorage.setItem('epn_user', JSON.stringify(user));
-      dispatch({ type: 'LOGIN_SUCCESS', payload: { user, token } });
+      // 1. Firebase Auth handles the actual login
+      await signInWithEmailAndPassword(firebaseAuth, email, password);
+      // The onAuthStateChanged listener will handle syncing with the backend and updating state
     } catch (err) {
       dispatch({ type: 'SET_LOADING', payload: false });
       throw err;
@@ -83,7 +93,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = useCallback(async () => {
     try {
-      await authApi.logout().catch(() => {});
+      await signOut(firebaseAuth);
     } catch (e) {
       console.error(e);
     }
@@ -95,11 +105,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const register = useCallback(async (data: any) => {
     dispatch({ type: 'SET_LOADING', payload: true });
     try {
-      const response = await authApi.register(data);
-      const { token, user } = response.data;
-      localStorage.setItem('epn_token', token);
-      localStorage.setItem('epn_user', JSON.stringify(user));
-      dispatch({ type: 'LOGIN_SUCCESS', payload: { user, token } });
+      // 1. Sync to Postgres DB FIRST so that the record exists when the listener fires
+      await authApi.register(data);
+
+      // 2. Firebase Auth creates the user account and signs them in
+      await createUserWithEmailAndPassword(firebaseAuth, data.email, data.password);
+      
+      // State is updated by onAuthStateChanged
     } catch (err) {
       dispatch({ type: 'SET_LOADING', payload: false });
       throw err;

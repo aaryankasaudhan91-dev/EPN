@@ -30,7 +30,22 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // ─── Security Middleware ───────────────────────────────────────────────────────
-app.use(helmet());
+const hpp = require('hpp');
+
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:", "https:"],
+      connectSrc: ["'self'", process.env.FRONTEND_URL || 'http://localhost:3000'],
+      upgradeInsecureRequests: [],
+    },
+  },
+  crossOriginEmbedderPolicy: false, // Prevent issues with external assets
+}));
+
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:3000',
   credentials: true,
@@ -40,13 +55,18 @@ app.use(cors({
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 200,
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
   message: { error: 'Too many requests, please try again later.' },
 });
 app.use('/api/', limiter);
 
-// ─── Body Parsing ──────────────────────────────────────────────────────────────
+// ─── Body Parsing & Protection ────────────────────────────────────────────────
 app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Prevent HTTP Parameter Pollution
+app.use(hpp());
 
 // ─── Logging ───────────────────────────────────────────────────────────────────
 if (process.env.NODE_ENV !== 'test') {

@@ -1,28 +1,48 @@
 /**
  * Blockchain Ledger Service
  * Simulates a permissioned hash-chained ledger for immutable record keeping.
- * Each block contains: index, data hash, previous hash, and block hash.
- * This provides tamper-evident audit trails for achievements, approvals, and AI actions.
+ * Includes Proof of Work (PoW) and HMAC cryptographic signatures.
  */
 
 const crypto = require('crypto');
 const { query } = require('../db/pool');
 
+const LEDGER_SECRET = process.env.LEDGER_SECRET || 'epn-super-secret-blockchain-key-change-in-prod';
+const POW_DIFFICULTY = 3; // Number of leading zeros required for a valid block hash
+
 /**
- * Compute SHA-256 hash of data
+ * Compute HMAC-SHA-256 hash of data
  * @param {*} data - Data to hash (will be JSON-stringified)
  * @returns {string} Hex hash string
  */
 const computeHash = (data) => {
   return crypto
-    .createHash('sha256')
+    .createHmac('sha256', LEDGER_SECRET)
     .update(JSON.stringify(data))
     .digest('hex');
 };
 
 /**
+ * Mine a block using Proof of Work
+ * @param {Object} blockHeader - Block details to mine
+ * @returns {Object} { nonce, blockHash }
+ */
+const mineBlock = (blockHeader) => {
+  let nonce = 0;
+  let blockHash = '';
+  const prefix = '0'.repeat(POW_DIFFICULTY);
+  
+  while (true) {
+    blockHash = computeHash({ ...blockHeader, nonce });
+    if (blockHash.startsWith(prefix)) {
+      return { nonce, blockHash };
+    }
+    nonce++;
+  }
+};
+
+/**
  * Get the latest block from the ledger
- * @returns {Object|null} Latest ledger record or null if empty
  */
 const getLatestBlock = async () => {
   const { rows } = await query(
@@ -33,35 +53,35 @@ const getLatestBlock = async () => {
 
 /**
  * Create a new ledger entry (block)
- * @param {Object} params
- * @param {string} params.recordType - Type of record
- * @param {string} [params.referenceId] - UUID of referenced entity
- * @param {Object} [params.metadata] - Additional metadata
- * @returns {Object} Created ledger record
  */
 const createLedgerEntry = async ({ recordType, referenceId = null, metadata = {} }) => {
   try {
     const latestBlock = await getLatestBlock();
-    const blockIndex = latestBlock ? latestBlock.block_index + 1 : 0;
+    const blockIndex = latestBlock ? parseInt(latestBlock.block_index) + 1 : 0;
     const previousHash = latestBlock ? latestBlock.block_hash : '0'.repeat(64);
 
     const timestamp = new Date().toISOString();
     const dataHash = computeHash({ recordType, referenceId, metadata, timestamp });
 
-    // Block hash includes previous hash to form the chain
-    const blockHash = computeHash({
+    const blockHeader = {
       blockIndex,
       dataHash,
       previousHash,
       timestamp,
-    });
+    };
+
+    // Perform Proof of Work
+    const { nonce, blockHash } = mineBlock(blockHeader);
+    
+    // Store nonce securely in metadata to allow verification
+    const finalMetadata = { ...metadata, nonce, timestamp };
 
     const { rows } = await query(
       `INSERT INTO ledger_records 
         (block_index, record_type, reference_id, data_hash, previous_hash, block_hash, metadata)
        VALUES ($1, $2, $3, $4, $5, $6, $7)
        RETURNING *`,
-      [blockIndex, recordType, referenceId, dataHash, previousHash, blockHash, JSON.stringify(metadata)]
+      [blockIndex, recordType, referenceId, dataHash, previousHash, blockHash, JSON.stringify(finalMetadata)]
     );
 
     return rows[0];
@@ -73,7 +93,6 @@ const createLedgerEntry = async ({ recordType, referenceId = null, metadata = {}
 
 /**
  * Verify the integrity of the entire ledger chain
- * @returns {Object} Verification result
  */
 const verifyLedgerIntegrity = async () => {
   const { rows } = await query(
@@ -86,12 +105,56 @@ const verifyLedgerIntegrity = async () => {
 
   let isValid = true;
   const errors = [];
+  const prefix = '0'.repeat(POW_DIFFICULTY);
 
   for (let i = 0; i < rows.length; i++) {
     const block = rows[i];
+    const metadata = block.metadata || {};
+    const nonce = metadata.nonce;
+    const timestamp = metadata.timestamp || block.created_at; // Fallback to DB created_at for older blocks
 
-    // Verify block index sequence
-    if (block.block_index !== i) {
+    // Recompute Data Hash to ensure record integrity
+    // Note: We extract the original metadata before the nonce was added if necessary,
+    // but for our implementation, the original metadata was passed to dataHash.
+    // To properly verify, we need the exact original metadata. Since we added nonce/timestamp to metadata AFTER dataHash,
+    // we must reconstruct the original metadata.
+    const originalMetadata = { ...metadata };
+    delete originalMetadata.nonce;
+    delete originalMetadata.timestamp;
+    
+    const expectedDataHash = computeHash({ 
+      recordType: block.record_type, 
+      referenceId: block.reference_id, 
+      metadata: originalMetadata, 
+      timestamp 
+    });
+
+    if (expectedDataHash !== block.data_hash) {
+      errors.push(`Block ${i}: Data tampering detected (data hash mismatch)`);
+      isValid = false;
+    }
+
+    // Recompute Block Hash to ensure chain and PoW integrity
+    const expectedBlockHash = computeHash({
+      blockIndex: parseInt(block.block_index),
+      dataHash: block.data_hash,
+      previousHash: block.previous_hash,
+      timestamp,
+      nonce
+    });
+
+    if (expectedBlockHash !== block.block_hash) {
+      errors.push(`Block ${i}: Block hash mismatch (tampering or invalid nonce)`);
+      isValid = false;
+    }
+
+    if (!block.block_hash.startsWith(prefix)) {
+      errors.push(`Block ${i}: Proof of Work invalid (difficulty not met)`);
+      isValid = false;
+    }
+
+    // Verify index sequence
+    if (parseInt(block.block_index) !== i) {
       errors.push(`Block ${i}: index mismatch (expected ${i}, got ${block.block_index})`);
       isValid = false;
     }
@@ -115,14 +178,12 @@ const verifyLedgerIntegrity = async () => {
     valid: isValid,
     blockCount: rows.length,
     errors,
-    message: isValid ? 'Ledger integrity verified' : 'Ledger integrity compromised',
+    message: isValid ? 'Ledger integrity verified (Cryptographically Strong)' : 'Ledger integrity compromised',
   };
 };
 
 /**
  * Verify a specific record against the ledger
- * @param {string} referenceId - UUID of the record to verify
- * @returns {Object} Verification result
  */
 const verifyRecord = async (referenceId) => {
   const { rows } = await query(
@@ -135,13 +196,20 @@ const verifyRecord = async (referenceId) => {
   }
 
   const record = rows[0];
+  
+  // Quick PoW check on the individual record
+  const prefix = '0'.repeat(POW_DIFFICULTY);
+  if (!record.block_hash.startsWith(prefix)) {
+    return { verified: false, message: 'Record block hash fails PoW difficulty check' };
+  }
+  
   return {
     verified: true,
     blockIndex: record.block_index,
     blockHash: record.block_hash,
     recordType: record.record_type,
     timestamp: record.created_at,
-    message: 'Record verified on ledger',
+    message: 'Record verified securely on ledger',
   };
 };
 
