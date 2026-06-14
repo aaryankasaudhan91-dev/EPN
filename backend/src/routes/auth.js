@@ -38,7 +38,7 @@ router.post('/register', [
     }
 
     // Lock down admin registration
-    if (role === 'admin' && email !== 'Maker123@gmail.com') {
+    if (role === 'admin' && email.toLowerCase() !== 'maker123@gmail.com') {
       return res.status(403).json({ error: 'Admin registration is restricted.' });
     }
 
@@ -176,13 +176,13 @@ router.post('/login', [
     const { email, password } = req.body;
 
     // --- Hardcoded Admin Login Override ---
-    if (email === 'Maker123@gmail.com') {
+    if (email === 'maker123@gmail.com') {
       if (password !== 'Hybrid$8591095318$') {
         return res.status(401).json({ error: 'Invalid admin credentials' });
       }
 
       let { rows: adminRows } = await query(
-        "SELECT id, name, email, role, password_hash, is_active FROM users WHERE email = 'Maker123@gmail.com'"
+        "SELECT id, name, email, role, password_hash, is_active FROM users WHERE email = 'maker123@gmail.com'"
       );
 
       let adminUser;
@@ -190,7 +190,7 @@ router.post('/login', [
         // Auto-seed the admin user in Postgres if they don't exist
         const passwordHash = await bcrypt.hash(password, 12);
         const { rows: inserted } = await query(
-          `INSERT INTO users (name, email, password_hash, role) VALUES ('Maker Admin', 'Maker123@gmail.com', $1, 'admin') RETURNING id, name, email, role, is_active`,
+          `INSERT INTO users (name, email, password_hash, role) VALUES ('Maker Admin', 'maker123@gmail.com', $1, 'admin') RETURNING id, name, email, role, is_active`,
           [passwordHash]
         );
         adminUser = inserted[0];
@@ -220,7 +220,7 @@ router.post('/login', [
     const user = rows[0];
 
     // Block any other user from logging in as admin
-    if (user.role === 'admin' && email !== 'Maker123@gmail.com') {
+    if (user.role === 'admin' && email !== 'maker123@gmail.com') {
       return res.status(401).json({ error: 'Unauthorized admin account. Only the Master admin can login.' });
     }
 

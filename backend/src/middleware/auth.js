@@ -46,7 +46,7 @@ const authenticate = async (req, res, next) => {
     const user = rows[0];
 
     // Global Admin Enforcement
-    if (user.role === 'admin' && user.email !== 'Maker123@gmail.com') {
+    if (user.role === 'admin' && user.email.toLowerCase() !== 'maker123@gmail.com') {
       return res.status(403).json({ error: 'Unauthorized admin account. Only the Master admin is allowed.' });
     }
 
