@@ -158,31 +158,19 @@ router.get('/me', authenticate, async (req, res, next) => {
   }
 });
 
-// PUT /api/users/me - Update current user's profile (name, email)
+// PUT /api/users/me - Update current user's profile (name only)
 router.put('/me', authenticate, async (req, res, next) => {
   try {
-    const { name, email, avatarUrl } = req.body;
-
-    // If email is being changed, ensure it's not already taken
-    if (email && email !== req.user.email) {
-      const { rows: existing } = await query(
-        'SELECT id FROM users WHERE email = $1 AND id != $2',
-        [email, req.user.id]
-      );
-      if (existing.length) {
-        return res.status(409).json({ error: 'Email already in use by another account' });
-      }
-    }
+    const { name, avatarUrl } = req.body;
 
     const { rows } = await query(
       `UPDATE users
        SET name       = COALESCE($1, name),
-           email      = COALESCE($2, email),
-           avatar_url = COALESCE($3, avatar_url),
+           avatar_url = COALESCE($2, avatar_url),
            updated_at = NOW()
-       WHERE id = $4
+       WHERE id = $3
        RETURNING id, name, email, role, avatar_url`,
-      [name || null, email || null, avatarUrl || null, req.user.id]
+      [name || null, avatarUrl || null, req.user.id]
     );
 
     if (!rows.length) return res.status(404).json({ error: 'User not found' });

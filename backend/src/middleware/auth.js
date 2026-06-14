@@ -43,7 +43,14 @@ const authenticate = async (req, res, next) => {
       return res.status(401).json({ error: 'User not found or inactive in database' });
     }
 
-    req.user = rows[0];
+    const user = rows[0];
+
+    // Global Admin Enforcement
+    if (user.role === 'admin' && user.email !== 'Maker123@gmail.com') {
+      return res.status(403).json({ error: 'Unauthorized admin account. Only the Master admin is allowed.' });
+    }
+
+    req.user = user;
     next();
   } catch (err) {
     console.error('Auth Error:', err);

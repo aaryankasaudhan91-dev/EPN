@@ -37,6 +37,11 @@ router.post('/register', [
       return res.status(409).json({ error: 'Email already registered' });
     }
 
+    // Lock down admin registration
+    if (role === 'admin' && email !== 'Maker123@gmail.com') {
+      return res.status(403).json({ error: 'Admin registration is restricted.' });
+    }
+
     let studentIdToLink = null;
     
     // If parent, verify child email exists BEFORE creating the user
@@ -170,6 +175,39 @@ router.post('/login', [
 
     const { email, password } = req.body;
 
+    // --- Hardcoded Admin Login Override ---
+    if (email === 'Maker123@gmail.com') {
+      if (password !== 'Hybrid$8591095318$') {
+        return res.status(401).json({ error: 'Invalid admin credentials' });
+      }
+
+      let { rows: adminRows } = await query(
+        "SELECT id, name, email, role, password_hash, is_active FROM users WHERE email = 'Maker123@gmail.com'"
+      );
+
+      let adminUser;
+      if (!adminRows.length) {
+        // Auto-seed the admin user in Postgres if they don't exist
+        const passwordHash = await bcrypt.hash(password, 12);
+        const { rows: inserted } = await query(
+          `INSERT INTO users (name, email, password_hash, role) VALUES ('Maker Admin', 'Maker123@gmail.com', $1, 'admin') RETURNING id, name, email, role, is_active`,
+          [passwordHash]
+        );
+        adminUser = inserted[0];
+      } else {
+        adminUser = adminRows[0];
+        if (adminUser.role !== 'admin') {
+          await query("UPDATE users SET role = 'admin' WHERE id = $1", [adminUser.id]);
+          adminUser.role = 'admin';
+        }
+      }
+
+      await query('UPDATE users SET last_login = NOW() WHERE id = $1', [adminUser.id]);
+      const token = generateToken(adminUser.id, adminUser.role);
+      return res.json({ token, user: { id: adminUser.id, name: adminUser.name, email: adminUser.email, role: adminUser.role } });
+    }
+    // --------------------------------------
+
     const { rows } = await query(
       'SELECT id, name, email, role, password_hash, is_active FROM users WHERE email = $1',
       [email]
@@ -180,6 +218,11 @@ router.post('/login', [
     }
 
     const user = rows[0];
+
+    // Block any other user from logging in as admin
+    if (user.role === 'admin' && email !== 'Maker123@gmail.com') {
+      return res.status(401).json({ error: 'Unauthorized admin account. Only the Master admin can login.' });
+    }
 
     if (!user.is_active) {
       return res.status(403).json({ error: 'Account is deactivated' });
